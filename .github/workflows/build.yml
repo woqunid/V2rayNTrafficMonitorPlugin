@@ -1,0 +1,36 @@
+name: build-dll
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "Plugin.cpp"
+      - ".github/workflows/build.yml"
+
+jobs:
+  build-x64:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up MSVC x64
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Download TrafficMonitor plugin interface
+        shell: powershell
+        run: |
+          Invoke-WebRequest -Uri "https://raw.githubusercontent.com/zhongyang219/TrafficMonitor/master/include/PluginInterface.h" -OutFile "PluginInterface.h"
+
+      - name: Build V2rayNTraffic.dll
+        shell: cmd
+        run: cl /nologo /std:c++17 /EHsc /O2 /MT /LD /DUNICODE /D_UNICODE /utf-8 Plugin.cpp /Fe:V2rayNTraffic.dll /link winhttp.lib iphlpapi.lib ws2_32.lib user32.lib gdi32.lib
+
+      - name: Upload DLL
+        uses: actions/upload-artifact@v4
+        with:
+          name: V2rayNTraffic-x64
+          path: V2rayNTraffic.dll
+          if-no-files-found: error
